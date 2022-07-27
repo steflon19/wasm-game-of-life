@@ -62,9 +62,32 @@ impl Universe {
         self.height
     }
 
-    // pub fn cells(&self) -> *const Cell {
+    fn reset_cells(&mut self) {
+        (0..self.height).for_each(|i| {
+            (0..self.width).for_each(|j| {
+                let idx = self.get_index(i, j);
+                self.cells.set(idx, false);
+            });
+        });
+    }
+
+    /// Set the width of the universe.
+    ///
+    /// Resets all cells to the dead state.
+    pub fn set_width(&mut self, width: u32) {
+        self.width = width;
+        self.reset_cells();
+    }
+
+    /// Set the height of the universe.
+    ///
+    /// Resets all cells to the dead state.
+    pub fn set_height(&mut self, height: u32) {
+        self.height = height;
+        self.reset_cells();
+    }
+
     pub fn cells(&self) -> *const u32 {
-        // self.cells.as_ptr()
         self.cells.as_slice().as_ptr()
     }
 
@@ -77,24 +100,6 @@ impl Universe {
                 let cell = self.cells[idx];
                 let live_neighbors = self.live_neighbor_count(row, col);
 
-                // let next_cell = match (cell, live_neighbors) {
-                //     // Rule 1: Any live cell with fewer than two live neighbours
-                //     // dies, as if caused by underpopulation.
-                //     (Cell::Alive, x) if x < 2 => Cell::Dead,
-                //     // Rule 2: Any live cell with two or three live neighbours
-                //     // lives on to the next generation.
-                //     (Cell::Alive, 2) | (Cell::Alive, 3) => Cell::Alive,
-                //     // Rule 3: Any live cell with more than three live
-                //     // neighbours dies, as if by overpopulation.
-                //     (Cell::Alive, x) if x > 3 => Cell::Dead,
-                //     // Rule 4: Any dead cell with exactly three live neighbours
-                //     // becomes a live cell, as if by reproduction.
-                //     (Cell::Dead, 3) => Cell::Alive,
-                //     // All other cells remain in the same state.
-                //     (otherwise, _) => otherwise,
-                // };
-
-                // next[idx] = next_cell;
                 next.set(
                     idx,
                     match (cell, live_neighbors) {
@@ -114,34 +119,6 @@ impl Universe {
     pub fn new() -> Universe {
         let width = 64u32;
         let height = 64u32;
-
-        // let cells = (0..width * height)
-        //     .map(|i| {
-        //         // initial
-        //         // if i % 2 == 0 || i % 7 == 0 {
-        //         //     Cell::Alive
-        //         // } else {
-        //         //     Cell::Dead
-        //         // }
-        //         // 50%
-        //         // if js_sys::Math::random() < 0.5 {
-        //         //     Cell::Alive
-        //         // } else {
-        //         //     Cell::Dead
-        //         // }
-        //         // glider
-        //         if i == 3
-        //             || i == 1 + height
-        //             || i == 3 + height
-        //             || i == 2 + height * 2
-        //             || i == 3 + height * 2
-        //         {
-        //             Cell::Alive
-        //         } else {
-        //             Cell::Dead
-        //         }
-        //     })
-        //     .collect();
 
         let size = (width * height);
         let mut cells = FixedBitSet::with_capacity(size as usize);
@@ -166,6 +143,22 @@ impl Universe {
 
     pub fn render(&self) -> String {
         self.to_string()
+    }
+}
+
+impl Universe {
+    /// Get the dead and alive values of the entire universe.
+    pub fn get_cells(&self) -> &[u32] {
+        &self.cells.as_slice()
+    }
+
+    /// Set cells to be alive in a universe by passing the row and column
+    /// of each cell as an array.
+    pub fn set_cells(&mut self, cells: &[(u32, u32)]) {
+        for (row, col) in cells.iter().cloned() {
+            let idx = self.get_index(row, col);
+            self.cells.set(idx, true); //[idx] = Cell::Alive;
+        }
     }
 }
 
