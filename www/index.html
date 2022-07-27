@@ -15,11 +15,26 @@
         align-items: center;
         justify-content: center;
       }
+      .renderCycles{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
     </style>
   </head>
   <body>
     <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+    <div>
+      <button id="play-pause"></button>
+      <button id="reset-button"></button>
+      <button id="kill-button"></button>
+    </div>
+
     <canvas id="game-of-life-canvas"></canvas>
+    <div class="renderCycles">
+      <input id="render-cycles" type="range" min="0" max="10" value="1">
+      <span id="render-cycles-numeric">1</span>
+    </div>
     <script src="./bootstrap.js"></script>
   </body>
 </html>

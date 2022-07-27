@@ -2,6 +2,7 @@ mod utils;
 
 extern crate fixedbitset;
 extern crate js_sys;
+extern crate web_sys;
 use fixedbitset::FixedBitSet;
 use std::fmt;
 use wasm_bindgen::prelude::*;
@@ -12,12 +13,11 @@ use wasm_bindgen::prelude::*;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-#[wasm_bindgen]
-#[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Cell {
-    Dead = 0,
-    Alive = 1,
+// A macro to provide `println!(..)`-style syntax for `console.log` logging.
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
 }
 
 #[wasm_bindgen]
@@ -71,6 +71,49 @@ impl Universe {
         });
     }
 
+    // Toggle the cell alive/dead state
+    pub fn toggle_cell(&mut self, row: u32, column: u32) {
+        let idx = self.get_index(row, column);
+        self.cells.toggle(idx);
+    }
+
+    // Spawns a glider around the given position
+    pub fn spawn_glider(&mut self, row: u32, column: u32) {
+        // there is a bug when spawning around the edges or in corners.. think about the indices
+        let mut idxs = vec![];
+        idxs.push(self.get_index(row, column));
+        idxs.push(self.get_index(row - 1, column - 1));
+        idxs.push(self.get_index(row - 1, column + 1));
+        idxs.push(self.get_index(row, column + 1));
+        idxs.push(self.get_index(row + 1, column));
+        idxs.iter().for_each(|&i| {
+            self.cells.set(i, true);
+        });
+    }
+
+    // Spawns a pulsar around the given position
+    pub fn spawn_pulsar(&mut self, row: u32, column: u32) {
+        (0..3).for_each(|i| {
+            let idx = self.get_index(row + i, column);
+            self.cells.set(idx, true);
+        });
+    }
+
+    // Clears all alive cells
+    pub fn kill_all(&mut self) {
+        self.cells.clear();
+    }
+
+    // Reset the universe to a random state
+    pub fn reset(&mut self) {
+        (0..self.height).for_each(|i| {
+            (0..self.width).for_each(|j| {
+                let idx = self.get_index(i, j);
+                self.cells.set(idx, js_sys::Math::random() >= 0.5);
+            });
+        });
+    }
+
     /// Set the width of the universe.
     ///
     /// Resets all cells to the dead state.
@@ -117,10 +160,13 @@ impl Universe {
     }
 
     pub fn new() -> Universe {
+        // initialize debugging
+        utils::set_panic_hook();
+
         let width = 64u32;
         let height = 64u32;
 
-        let size = (width * height);
+        let size = width * height;
         let mut cells = FixedBitSet::with_capacity(size as usize);
 
         for i in 0..size {
@@ -133,7 +179,12 @@ impl Universe {
                     || i == 3 + height * 2,
             );
         }
-
+        log!(
+            "creating new universe with \n\t width {:?}\n\t height {:?}\n\t cells {:?}",
+            width,
+            height,
+            cells
+        );
         Universe {
             width,
             height,
@@ -166,11 +217,7 @@ impl fmt::Display for Universe {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for line in self.cells.as_slice().chunks(self.width as usize) {
             for &cell in line {
-                let symbol = if cell == Cell::Dead as u32 {
-                    '◻'
-                } else {
-                    '◼'
-                };
+                let symbol = if cell == 0u32 { '◻' } else { '◼' };
                 write!(f, "{}", symbol)?;
             }
             write!(f, "\n")?;
