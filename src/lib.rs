@@ -36,22 +36,35 @@ impl Universe {
 
     fn live_neighbor_count(&self, row: u32, column: u32) -> u8 {
         let mut count = 0;
-        [self.height - 1, 0, 1]
-            .iter()
-            .cloned()
-            .for_each(|delta_row| {
-                [self.width - 1, 0, 1]
-                    .iter()
-                    .cloned()
-                    .for_each(|delta_col| {
-                        if delta_row != 0 || delta_col != 0 {
-                            let neighbor_row = (row + delta_row) % self.height;
-                            let neighbor_col = (column + delta_col) % self.width;
-                            let idx = self.get_index(neighbor_row, neighbor_col);
-                            count += self.cells[idx] as u8;
-                        }
-                    });
-            });
+
+        let north = if row == 0 { self.height - 1 } else { row - 1 };
+
+        let south = if row == self.height - 1 { 0 } else { row + 1 };
+
+        let west = if column == 0 {
+            self.width - 1
+        } else {
+            column - 1
+        };
+
+        let east = if column == self.width - 1 {
+            0
+        } else {
+            column + 1
+        };
+
+        let dirs = Vec::with_capacity(8);
+        dirs.push(self.get_index(north, west));
+        dirs.push(self.get_index(north, column));
+        dirs.push(self.get_index(north, east));
+        dirs.push(self.get_index(row, west));
+        dirs.push(self.get_index(row, east));
+        dirs.push(self.get_index(south, west));
+        dirs.push(self.get_index(south, column));
+        dirs.push(self.get_index(south, east));
+
+        dirs.iter().for_each(|d| count += self.cells[d] as u8);
+
         count
     }
 
