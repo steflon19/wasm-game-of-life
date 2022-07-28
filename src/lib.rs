@@ -6,6 +6,7 @@ extern crate web_sys;
 use fixedbitset::FixedBitSet;
 use std::fmt;
 use wasm_bindgen::prelude::*;
+use web_sys::console;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -179,12 +180,7 @@ impl Universe {
                     || i == 3 + height * 2,
             );
         }
-        log!(
-            "creating new universe with \n\t width {:?}\n\t height {:?}\n\t cells {:?}",
-            width,
-            height,
-            cells
-        );
+
         Universe {
             width,
             height,
@@ -224,5 +220,32 @@ impl fmt::Display for Universe {
         }
 
         Ok(())
+    }
+}
+
+// utils/profiling
+// access performance.now() from the browser
+fn now() -> f64 {
+    web_sys::window()
+        .expect("should have a Window")
+        .performance()
+        .expect("should have a Performance")
+        .now()
+}
+
+pub struct Timer<'a> {
+    name: &'a str,
+}
+
+impl<'a> Timer<'a> {
+    pub fn new(name: &'a str) -> Timer<'a> {
+        console::time_with_label(name);
+        Timer { name }
+    }
+}
+
+impl<'a> Drop for Timer<'a> {
+    fn drop(&mut self) {
+        console::time_end_with_label(self.name);
     }
 }

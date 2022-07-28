@@ -20,11 +20,18 @@
         justify-content: center;
         align-items: center;
       }
+      .fps {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        white-space: pre;
+        font-family: monospace;
+      }
     </style>
   </head>
   <body>
     <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
-    <div>
+    <div style="margin-bottom: 6px;">
       <button id="play-pause"></button>
       <button id="reset-button"></button>
       <button id="kill-button"></button>
@@ -35,6 +42,7 @@
       <input id="render-cycles" type="range" min="0" max="10" value="1">
       <span id="render-cycles-numeric">1</span>
     </div>
+    <div class="fps" id="fps"></div>
     <script src="./bootstrap.js"></script>
   </body>
 </html>

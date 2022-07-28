@@ -70,21 +70,65 @@ playPauseButton.addEventListener("click", event => {
   }
 });
 
+/// profiling
+const fps = new class {
+    constructor() {
+      this.fps = document.getElementById("fps");
+      this.frames = [];
+      this.lastFrameTimeStamp = performance.now();
+    }
+  
+    render() {
+      // Convert the delta time since the last frame render into a measure
+      // of frames per second.
+      const now = performance.now();
+      const delta = now - this.lastFrameTimeStamp;
+      this.lastFrameTimeStamp = now;
+      const fps = 1 / delta * 1000;
+  
+      // Save only the latest 100 timings.
+      this.frames.push(fps);
+      if (this.frames.length > 100) {
+        this.frames.shift();
+      }
+  
+      // Find the max, min, and mean of our 100 latest timings.
+      let min = Infinity;
+      let max = -Infinity;
+      let sum = 0;
+      for (let i = 0; i < this.frames.length; i++) {
+        sum += this.frames[i];
+        min = Math.min(this.frames[i], min);
+        max = Math.max(this.frames[i], max);
+      }
+      let mean = sum / this.frames.length;
+  
+      // Render the statistics.
+      this.fps.textContent = `
+  Frames per Second:
+           latest = ${Math.round(fps)}
+  avg of last 100 = ${Math.round(mean)}
+  min of last 100 = ${Math.round(min)}
+  max of last 100 = ${Math.round(max)}
+  `.trim();
+    }
+};
+
+/// end profiling
+
 /// play/pause handling
 let animationId = null;
 const renderLoop = () => {
+    fps.render();
     // debugger;
+    canvas.textContent = universe.render();
+    
     let cycles = renderCyclesInput.value
-
-    
     for (let i = 0; i < cycles; i++) {
-        canvas.textContent = universe.render();
         universe.tick();
-    
-        drawGrid();
-        drawCells();
-
     }
+    drawGrid();
+    drawCells();
     animationId = requestAnimationFrame(renderLoop);
 };
 
@@ -127,23 +171,42 @@ const drawCells = () => {
     const cells = new Uint8Array(memory.buffer, cellsPtr, width * height / 8);
   
     ctx.beginPath();
-  
+
+    // fillstyle is costly. split in two loops
+    // Alive cells.
+    ctx.fillStyle = ALIVE_COLOR;
     for (let row = 0; row < height; row++) {
-      for (let col = 0; col < width; col++) {
-        const idx = getIndex(row, col);
-  
-        // ctx.fillStyle = cells[idx] === Cell.Dead
-        ctx.fillStyle = bitIsSet(idx, cells)
-            ? ALIVE_COLOR
-            : DEAD_COLOR;
-  
-        ctx.fillRect(
-          col * (CELL_SIZE + 1) + 1,
-          row * (CELL_SIZE + 1) + 1,
-          CELL_SIZE,
-          CELL_SIZE
-        );
-      }
+        for (let col = 0; col < width; col++) {
+            const idx = getIndex(row, col);
+            if (!bitIsSet(idx, cells)) {
+                continue;
+            }
+
+            ctx.fillRect(
+                col * (CELL_SIZE + 1) + 1,
+                row * (CELL_SIZE + 1) + 1,
+                CELL_SIZE,
+                CELL_SIZE
+            );
+        }
+    }
+
+    // Dead cells.
+    ctx.fillStyle = DEAD_COLOR;
+    for (let row = 0; row < height; row++) {
+        for (let col = 0; col < width; col++) {
+            const idx = getIndex(row, col);
+            if (bitIsSet(idx, cells)) {
+                continue;
+            }
+
+            ctx.fillRect(
+                col * (CELL_SIZE + 1) + 1,
+                row * (CELL_SIZE + 1) + 1,
+                CELL_SIZE,
+                CELL_SIZE
+            );
+        }
     }
   
     ctx.stroke();
@@ -177,3 +240,5 @@ drawGrid();
 drawCells();
 // requestAnimationFrame(renderLoop);
 play();
+
+  
