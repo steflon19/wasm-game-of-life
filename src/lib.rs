@@ -53,7 +53,7 @@ impl Universe {
             column + 1
         };
 
-        let dirs = Vec::with_capacity(8);
+        let mut dirs = Vec::with_capacity(8);
         dirs.push(self.get_index(north, west));
         dirs.push(self.get_index(north, column));
         dirs.push(self.get_index(north, east));
@@ -63,7 +63,7 @@ impl Universe {
         dirs.push(self.get_index(south, column));
         dirs.push(self.get_index(south, east));
 
-        dirs.iter().for_each(|d| count += self.cells[d] as u8);
+        dirs.iter().for_each(|d| count += self.cells[*d] as u8);
 
         count
     }
@@ -95,11 +95,20 @@ impl Universe {
     pub fn spawn_glider(&mut self, row: u32, column: u32) {
         // there is a bug when spawning around the edges or in corners.. think about the indices
         let mut idxs = vec![];
+        let up = if row == self.height { 0 } else { row + 1 };
+        let down = if row == 0 { self.height - 1 } else { row - 1 };
+        let left = if column == 0 {
+            self.width - 1
+        } else {
+            column - 1
+        };
+        let right = if column == self.width { 0 } else { column + 1 };
+
         idxs.push(self.get_index(row, column));
-        idxs.push(self.get_index(row - 1, column - 1));
-        idxs.push(self.get_index(row - 1, column + 1));
-        idxs.push(self.get_index(row, column + 1));
-        idxs.push(self.get_index(row + 1, column));
+        idxs.push(self.get_index(down, left));
+        idxs.push(self.get_index(down, right));
+        idxs.push(self.get_index(row, right));
+        idxs.push(self.get_index(up, column));
         idxs.iter().for_each(|&i| {
             self.cells.set(i, true);
         });
